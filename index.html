@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI-Powered Battery Intelligence — Real-time prediction, live simulation, and smart optimization using Groq Mixtral." />
+  <title>BatteryAI — Intelligent Power Prediction</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Canvas Particle Background -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <div class="logo-icon">⚡</div>
+        <span>BatteryAI</span>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="nav-tab" data-tab="simulate">Live Sim</button>
+      <button class="nav-tab" data-tab="history">History</button>
+    </div>
+    <div class="nav-right">
+      <div id="liveTime" class="live-time"></div>
+      <div class="ai-pill" id="aiPill">
+        <div class="ai-pulse"></div>
+        <span id="aiPillText">AI Offline</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======= DASHBOARD TAB ======= -->
+  <main class="tab-view active" id="tab-dashboard">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-text">
+        <div class="eyebrow">🔋 Intelligent Power Analysis</div>
+        <h1>Know Your Battery<br /><span class="shimmer">Before It Knows You</span></h1>
+        <p>Groq-accelerated AI prediction engine with real-time drain analytics, usage profiles, and personalized optimization — all running at the speed of thought.</p>
+        <div class="hero-chips">
+          <span class="chip">⚡ Groq Mixtral</span>
+          <span class="chip">📡 LangChain Agent</span>
+          <span class="chip">📊 Chart.js Visuals</span>
+          <span class="chip">🧠 Conversational Memory</span>
+        </div>
+      </div>
+      <div class="hero-battery-wrap">
+        <div class="battery-widget" id="heroWidget">
+          <div class="bw-glow" id="bwGlow"></div>
+          <div class="bw-body">
+            <div class="bw-fill" id="bwFill"></div>
+            <div class="bw-scanline"></div>
+            <div class="bw-pct" id="bwPct">75%</div>
+          </div>
+          <div class="bw-tip"></div>
+        </div>
+        <div class="bw-stats">
+          <div class="bw-stat"><span id="statRemTime">6.0h</span><small>Remaining</small></div>
+          <div class="bw-stat"><span id="statStatus">Good</span><small>Status</small></div>
+          <div class="bw-stat"><span id="statTemp">Normal</span><small>Thermal</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Input + Results Grid -->
+    <section class="main-grid">
+      <!-- Controls Card -->
+      <div class="card" id="controlsCard">
+        <div class="card-title">
+          <span>📊 Battery Parameters</span>
+          <div class="dot-live"></div>
+        </div>
+
+        <div class="profile-select-row">
+          <label class="field-label">Usage Profile</label>
+          <div class="profile-btns">
+            <button class="profile-btn active" data-drain="8" data-profile="Standby" onclick="setProfile(this)">💤 Standby</button>
+            <button class="profile-btn" data-drain="12" data-profile="Work" onclick="setProfile(this)">💼 Work</button>
+            <button class="profile-btn" data-drain="20" data-profile="Streaming" onclick="setProfile(this)">🎬 Stream</button>
+            <button class="profile-btn" data-drain="35" data-profile="Gaming" onclick="setProfile(this)">🎮 Gaming</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Current Battery Level</label>
+          <div class="slider-row">
+            <input type="range" id="sliderBattery" min="1" max="100" value="75" oninput="onSliderChange(this.value)" />
+            <div class="mono-badge" id="sliderBadge">75%</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Drain Rate <span class="muted">(%/hr)</span></label>
+          <input type="number" class="field-input" id="inputDrain" value="8" min="0.1" step="0.1" oninput="liveUpdate()" />
+        </div>
+
+        <button class="btn-main" id="calcBtn" onclick="calculate()">
+          <span class="btn-ico">🚀</span> Calculate Trajectory
+        </button>
+
+        <div class="field-group" style="margin-top:1.5rem;">
+          <label class="field-label">Groq API Key</label>
+          <div class="key-row">
+            <input type="password" class="field-input" id="apiKey" placeholder="gsk_..." />
+            <button class="icon-btn" onclick="toggleKey()">👁</button>
+          </div>
+        </div>
+
+        <button class="btn-ai" id="aiBtn" onclick="getAIInsights()">
+          <span class="btn-ico">🤖</span> Generate AI Insights
+        </button>
+      </div>
+
+      <!-- Result Card -->
+      <div class="card result-card" id="resultCard">
+        <div class="card-title"><span>🎯 Prediction Output</span></div>
+
+        <div class="result-hero">
+          <div class="result-num" id="resultNum">--</div>
+          <div class="result-label">hours remaining</div>
+          <div class="result-sub" id="resultSub">Run a calculation to see results</div>
+        </div>
+
+        <div class="result-stat-grid" id="resultStats" style="display:none">
+          <div class="rs-item"><span class="rs-val" id="rs1">--</span><span class="rs-key">Battery</span></div>
+          <div class="rs-item"><span class="rs-val" id="rs2">--</span><span class="rs-key">Drain/hr</span></div>
+          <div class="rs-item"><span class="rs-val" id="rs3">--</span><span class="rs-key">Depleted By</span></div>
+          <div class="rs-item"><span class="rs-val" id="rs4">--</span><span class="rs-key">Profile</span></div>
+        </div>
+
+        <div class="health-bar-wrap" id="healthBarWrap" style="display:none">
+          <div class="health-label" id="healthLabel">Battery Health Status</div>
+          <div class="health-track"><div class="health-fill" id="healthFill"></div></div>
+        </div>
+      </div>
+
+      <!-- AI Response Card -->
+      <div class="card ai-card" id="aiCard">
+        <div class="card-title">
+          <span>🧠 Groq LLaMA AI Insights</span>
+          <span class="model-tag">llama3-8b-8192</span>
+        </div>
+        <div class="ai-output" id="aiOutput">
+          <div class="ai-placeholder">
+            <div class="ai-ph-icon">🌐</div>
+            <p>Enter your Groq API key and click <strong>Generate AI Insights</strong> to receive personalized battery intelligence generated by LLaMA.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chart Section -->
+    <section class="chart-section" style="margin-top: 2rem;">
+      <div class="card chart-card">
+        <div class="card-title">
+          <span>📉 Depletion Forecast</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="mainChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======= LIVE SIMULATION TAB ======= -->
+  <main class="tab-view" id="tab-simulate">
+    <section class="sim-section">
+      <div class="card" style="max-width:700px;margin:0 auto;">
+        <div class="card-title"><span>⚡ Live Battery Simulator</span><div class="dot-live"></div></div>
+        <p class="muted" style="margin-bottom:1.5rem;">Watch your battery drain in accelerated real-time simulation based on your settings.</p>
+        
+        <div class="sim-display">
+          <div class="sim-battery">
+            <div class="sim-fill" id="simFill"></div>
+            <div class="sim-pct" id="simPct">—</div>
+          </div>
+          <div class="sim-info">
+            <div class="sim-row"><span>Simulated Level:</span> <strong id="simLevel">—</strong></div>
+            <div class="sim-row"><span>Time Elapsed:</span> <strong id="simElapsed">0 min</strong></div>
+            <div class="sim-row"><span>Projected End:</span> <strong id="simEnd">—</strong></div>
+            <div class="sim-row"><span>Drain Rate:</span> <strong id="simDrain">—</strong></div>
+          </div>
+        </div>
+
+        <div class="sim-btns" style="margin-top:2rem; display: flex; gap: 1rem; width: 100%;">
+          <button class="btn-main" id="simStartBtn" onclick="startSim()" style="flex: 1;">▶ Start Simulation</button>
+          <button class="btn-primary" onclick="resetSim()" style="padding: 1rem 2rem;">↺ Reset</button>
+        </div>
+
+        <div class="chart-wrap" style="margin-top:2rem; height: 250px;">
+          <canvas id="simChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======= HISTORY TAB ======= -->
+  <main class="tab-view" id="tab-history">
+    <section class="history-section">
+      <div class="card" style="max-width:800px;margin:0 auto;">
+        <div class="card-title">
+          <span>📜 Prediction History</span>
+          <button class="btn-primary" onclick="clearHistory()" style="padding: 0.5rem 1rem;">🗑 Clear</button>
+        </div>
+        <div id="historyList" class="history-list" style="margin-top: 1rem;">
+          <div class="empty-history" style="text-align:center; padding: 3rem; color: #94a3b8;">No predictions yet. Run your first calculation on the Dashboard!</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
